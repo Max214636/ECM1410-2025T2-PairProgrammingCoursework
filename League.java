@@ -1,29 +1,50 @@
+package gamesleague;
+
+import java.io.Serializable;
 import java.util.*;
 
-public class League {
-    private String name;
+public class League implements Serializable {
+    private String leagueName;
     private String gameType;
-    private Player owner;
     private List<Player> players;
-    private Map<Player, Integer> dailyScores;
+    private Map<String, Integer> scores;
 
-    public League(String name, String gameType, Player owner) {
-        this.name = name;
+    public League(String leagueName, String gameType) {
+        this.leagueName = leagueName;
         this.gameType = gameType;
-        this.owner = owner;
         this.players = new ArrayList<>();
-        this.dailyScores = new HashMap<>();
+        this.scores = new HashMap<>();
     }
 
-    public void recordGameResult(Player player, int score) {
-        dailyScores.put(player, score);
+    public void addPlayer(Player player) {
+        players.add(player);
+        scores.put(player.getEmail(), 0);
     }
 
-    public List<String> getDayScores() {
-        List<String> scores = new ArrayList<>();
-        for (Map.Entry<Player, Integer> entry : dailyScores.entrySet()) {
-            scores.add(entry.getKey().getDisplayName() + ": " + entry.getValue());
+    public void recordScore(String email, int score) {
+        if (scores.containsKey(email)) {
+            scores.put(email, scores.get(email) + score);
         }
+    }
+
+    public List<Player> getPlayers() {
+        return players;
+    }
+
+    public Map<String, Integer> getScores() {
+        return scores;
+    }
+
+    public String getLeagueName() {
+        return leagueName;
+    }
+
+    @Override
+    public String toString() {
+        return "League: " + leagueName + " (" + gameType + ")";
+    }
+}
+
         return scores;
     }
 }
