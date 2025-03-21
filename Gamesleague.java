@@ -1,85 +1,74 @@
+package gamesleague;
+
+import java.io.*;
 import java.util.*;
 
-public class GamesLeague implements GamesLeagueInterface {
-    private Map<String, Map<String, Integer>> dailyScores; // LeagueID -> (PlayerEmail -> Score)
-    private Map<String, Map<String, Integer>> leaguePoints; // LeagueID -> (PlayerEmail -> TotalPoints)
+public class GamesLeague {
+    private List<Player> players;
+    private List<League> leagues;
 
     public GamesLeague() {
-        this.dailyScores = new HashMap<>();
-        this.leaguePoints = new HashMap<>();
+        players = new ArrayList<>();
+        leagues = new ArrayList<>();
     }
 
-    @Override
-    public void registerGameReport(String leagueID, String playerEmail, String gameReport) {
-        System.out.println("Registering game report for " + playerEmail + " in League: " + leagueID);
-        System.out.println("Game Report: " + gameReport);
-
-        // Extract score from game report
-        int score = extractScore(gameReport);
-
-        // Store the score in the league's daily record
-        dailyScores.putIfAbsent(leagueID, new HashMap<>());
-        dailyScores.get(leagueID).put(playerEmail, score);
-
-        // Check if all players have submitted scores
-        if (isRoundComplete(leagueID)) {
-            registerDayScores(leagueID);
-        }
+    public void createPlayer(String displayName, String email) {
+        players.add(new Player(displayName, email));
     }
 
-    private int extractScore(String gameReport) {
-        String[] parts = gameReport.split(" ");
-        for (int i = 0; i < parts.length; i++) {
-            if (parts[i].equalsIgnoreCase("score:")) {
-                return Integer.parseInt(parts[i + 1]);
+    public Player getPlayerByEmail(String email) {
+        for (Player p : players) {
+            if (p.getEmail().equals(email)) {
+                return p;
             }
         }
-        return 36; // Default score for absent players
+        return null;
     }
 
-    private boolean isRoundComplete(String leagueID) {
-        int playerCount = getLeaguePlayerCount(leagueID);
-        return dailyScores.getOrDefault(leagueID, new HashMap<>()).size() == playerCount;
+    public void createLeague(String leagueName, String gameType) {
+        leagues.add(new League(leagueName, gameType));
     }
 
-    private void registerDayScores(String leagueID) {
-        Map<String, Integer> scores = dailyScores.get(leagueID);
-        System.out.println("Finalizing scores for League: " + leagueID);
-        System.out.println("Daily Scores: " + scores);
-
-        // Sort players by scores (ascending order for DICEROLL)
-        List<Map.Entry<String, Integer>> sortedScores = new ArrayList<>(scores.entrySet());
-        sortedScores.sort(Map.Entry.comparingByValue());
-
-        // Award league points
-        Map<String, Integer> points = leaguePoints.computeIfAbsent(leagueID, k -> new HashMap<>());
-        int previousScore = -1;
-        int currentPoints = 3; // 3 points for lowest score
-        int rank = 1;
-
-        for (Map.Entry<String, Integer> entry : sortedScores) {
-            String player = entry.getKey();
-            int score = entry.getValue();
-
-            // If score changes, adjust points
-            if (score != previousScore) {
-                if (rank == 2) currentPoints = 1; // 1 point for second place
-                else currentPoints = 0; // 0 for the rest
+    public League getLeagueByName(String leagueName) {
+        for (League l : leagues) {
+            if (l.getLeagueName().equals(leagueName)) {
+                return l;
             }
+        }
+        return null;
+    }
 
-            points.put(player, points.getOrDefault(player, 0) + currentPoints);
-            previousScore = score;
-            rank++;
+    public void saveData(String filename) {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
+            out.writeObject(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static GamesLeague loadData(String filename) {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
+            return (GamesLeague) in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            return new GamesLeague();
+        }
+    }
+
+    public static void main(String[] args) {
+        GamesLeague gl = new GamesLeague();
+        gl.createPlayer("Alice", "alice@example.com");
+        gl.createLeague("DiceRoll League", "DICEROLL");
+
+        League league = gl.getLeagueByName("DiceRoll League");
+        Player alice = gl.getPlayerByEmail("alice@example.com");
+
+        if (league != null && alice != null) {
+            league.addPlayer(alice);
+            league.recordScore(alice.getEmail(), 5);
         }
 
-        System.out.println("Updated League Points: " + points);
-
-        // Clear daily scores for the next round
-        dailyScores.remove(leagueID);
-    }
-
-    private int getLeaguePlayerCount(String leagueID) {
-        return 4; // Placeholder for testing
+        gl.saveData("gamesleague.dat");
     }
 }
 
