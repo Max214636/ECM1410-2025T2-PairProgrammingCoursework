@@ -1,15 +1,36 @@
-public class Player {
-    private String email;
-    private String displayName;
-    private String realName;
+package gamesleague;
 
-    public Player(String email, String displayName, String realName) {
-        this.email = email;
+import java.io.Serializable;
+
+public class Player implements Serializable {
+    private String displayName;
+    private String email;
+    private boolean isActive;
+
+    public Player(String displayName, String email) {
         this.displayName = displayName;
-        this.realName = realName;
+        this.email = email;
+        this.isActive = true;
     }
 
-    public String getEmail() { return email; }
-    public String getDisplayName() { return displayName; }
-    public String getRealName() { return realName; }
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean status) {
+        this.isActive = status;
+    }
+
+    @Override
+    public String toString() {
+        return displayName + " (" + email + ") - " + (isActive ? "Active" : "Inactive");
+    }
 }
