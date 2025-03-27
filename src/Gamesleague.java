@@ -1,75 +1,85 @@
-package gamesleague;
-
-import java.io.*;
 import java.util.*;
 
-public class GamesLeague {
-    private List<Player> players;
-    private List<League> leagues;
+// the GamesLeague class implements the GamesLeagueInterface and provides the backend functionality for managing players and leagues
+public class GamesLeague implements GamesLeagueInterface {
+    private Map<String, Player> players // map to store players indexed by email
+    private Map<String, League> leagues // map to store leagues indexed by league name
 
+    // constructor initializes the player and league maps
     public GamesLeague() {
-        players = new ArrayList<>();
-        leagues = new ArrayList<>();
+        this.players = new HashMap<>()
+        this.leagues = new HashMap<>()
     }
 
-    public void createPlayer(String displayName, String email) {
-        players.add(new Player(displayName, email));
-    }
-
-    public Player getPlayerByEmail(String email) {
-        for (Player p : players) {
-            if (p.getEmail().equals(email)) {
-                return p;
-            }
-        }
-        return null;
-    }
-
-    public void createLeague(String leagueName, String gameType) {
-        leagues.add(new League(leagueName, gameType));
-    }
-
-    public League getLeagueByName(String leagueName) {
-        for (League l : leagues) {
-            if (l.getLeagueName().equals(leagueName)) {
-                return l;
-            }
-        }
-        return null;
-    }
-
-    public void saveData(String filename) {
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
-            out.writeObject(this);
-        } catch (IOException e) {
-            e.printStackTrace();
+    /**
+     * registers a new player in the system if the email is not already in use
+     * @param email the player's email must be unique
+     * @param displayName the player's display name
+     * @param realName the player's real name
+     */
+    @Override
+    public void registerPlayer(String email, String displayName, String realName) {
+        if (!players.containsKey(email)) { // checks if the email already exists
+            players.put(email, new Player(email, displayName, realName)) // adds the new player to the map
+            System.out.println("player registered successfully: " + displayName)
+        } else {
+            System.out.println("error: player with this email already exists")
         }
     }
 
-    public static GamesLeague loadData(String filename) {
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
-            return (GamesLeague) in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-            return new GamesLeague();
+    /**
+     * checks if a player exists in the system using their email
+     * @param email the player's email
+     * @return true if the player exists false otherwise
+     */
+    @Override
+    public boolean playerExists(String email) {
+        return players.containsKey(email) // checks the map for the email
+    }
+
+    /**
+     * creates a new league in the system if the name is unique and the owner exists
+     * @param leagueName the name of the league
+     * @param gameType the type of game associated with the league
+     * @param ownerEmail the email of the player who owns the league
+     */
+    @Override
+    public void createLeague(String leagueName, String gameType, String ownerEmail) {
+        if (!leagues.containsKey(leagueName) && players.containsKey(ownerEmail)) { // checks if the league name is unique and the owner exists
+            leagues.put(leagueName, new League(leagueName, gameType, players.get(ownerEmail))) // creates and adds the league
+            System.out.println("league created successfully: " + leagueName)
+        } else {
+            System.out.println("error: league already exists or owner email is invalid")
         }
     }
 
-    public static void main(String[] args) {
-        GamesLeague gl = new GamesLeague();
-        gl.createPlayer("Alice", "alice@example.com");
-        gl.createLeague("DiceRoll League", "DICEROLL");
-
-        League league = gl.getLeagueByName("DiceRoll League");
-        Player alice = gl.getPlayerByEmail("alice@example.com");
-
-        if (league != null && alice != null) {
-            league.addPlayer(alice);
-            league.recordScore(alice.getEmail(), 5);
+    /**
+     * registers a game report for a player in a specific league
+     * @param leagueName the name of the league
+     * @param email the player's email
+     * @param score the score achieved by the player
+     */
+    @Override
+    public void registerGameReport(String leagueName, String email, int score) {
+        if (leagues.containsKey(leagueName) && players.containsKey(email)) { // checks if both the league and player exist
+            leagues.get(leagueName).recordGameResult(players.get(email), score) // records the game result
+            System.out.println("game report registered for player: " + email + " in league: " + leagueName)
+        } else {
+            System.out.println("error: invalid league name or player email")
         }
-
-        gl.saveData("gamesleague.dat");
     }
-}
 
+    /**
+     * retrieves the day scores for a specific league
+     * @param leagueName the name of the league
+     * @return a list of strings containing player scores for the day
+     */
+    @Override
+    public List<String> getDayScores(String leagueName) {
+        if (leagues.containsKey(leagueName)) { // checks if the league exists
+            return leagues.get(leagueName).getDayScores() // retrieves the day scores from the league
+        }
+        System.out.println("error: league not found")
+        return new ArrayList<>() // returns an empty list if the league does not exist
+    }
 }
